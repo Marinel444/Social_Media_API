@@ -1,5 +1,7 @@
 from django.db.models import Count
-from rest_framework import viewsets
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 from api.models import Post
 from api.serializers import PostSerializer, PostListSerializer, PostDetailSerializer
@@ -18,3 +20,15 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+
+    @action(detail=True, methods=["post"])
+    def toggle_like(self, request, pk=None):
+        post = self.get_object()
+        user = request.user
+
+        if post.likes.filter(id=user.id).exists():
+            post.likes.remove(user)
+            return Response({"status": "like removed"}, status=status.HTTP_200_OK)
+        else:
+            post.likes.add(user)
+            return Response({"status": "like added"}, status=status.HTTP_200_OK)
