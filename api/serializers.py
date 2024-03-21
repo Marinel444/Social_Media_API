@@ -1,12 +1,23 @@
 from rest_framework import serializers
 
-from api.models import Post, Comment, Follow
+from api.models import Post, Comment
 
 
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
-        fields = "__all__"
+        fields = ("id", "text", "author", "post", "updated_at", "created_at")
+
+
+class CommentListSerializer(CommentSerializer):
+    post = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Comment
+        fields = ("id", "post", "text")
+
+    def get_post(self, obj):
+        return str(obj.post)
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -51,3 +62,11 @@ class PostDetailSerializer(PostSerializer):
     def get_is_liked(self, obj):
         user = self.context["request"].user
         return obj.likes.filter(id=user.id).exists()
+
+
+class CommentDetailSerializer(CommentSerializer):
+    post = PostListSerializer(read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = ("id", "post", "text", "updated_at", "created_at")
