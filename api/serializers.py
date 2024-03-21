@@ -45,6 +45,7 @@ class PostListSerializer(PostSerializer):
 
 class PostDetailSerializer(PostSerializer):
     is_liked = serializers.SerializerMethodField()
+    comments = CommentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Post
@@ -57,6 +58,7 @@ class PostDetailSerializer(PostSerializer):
             "image",
             "likes",
             "is_liked",
+            "comments",
         )
 
     def get_is_liked(self, obj):
