@@ -7,6 +7,7 @@ class Post(models.Model):
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     likes = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="liked_posts")
     image = models.ImageField(upload_to=f"posts/%Y/%m/%d/")
+    updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -23,4 +24,14 @@ class Comment(models.Model):
     )
     post = models.ForeignKey(Post, related_name="comments", on_delete=models.CASCADE)
     updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class Follow(models.Model):
+    follower = models.ForeignKey(
+        settings.AUTH_USER_MODEL, related_name="follower", on_delete=models.CASCADE
+    )
+    followed = models.ForeignKey(
+        settings.AUTH_USER_MODEL, related_name="followed", on_delete=models.CASCADE
+    )
     created_at = models.DateTimeField(auto_now_add=True)
