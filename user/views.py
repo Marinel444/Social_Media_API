@@ -1,17 +1,28 @@
 from django.contrib.auth import get_user_model
 from django.db.models import OuterRef, Exists
 from rest_framework import generics, mixins, status
+from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.settings import api_settings
 from rest_framework.viewsets import GenericViewSet
 
 from user.models import Follow
-from user.serializers import UserManagerSerializer, UserListSerializer
+from user.serializers import (
+    UserManagerSerializer,
+    UserListSerializer,
+    AuthTokenSerializer,
+)
 
 
 class CreateUserView(generics.CreateAPIView):
     serializer_class = UserManagerSerializer
+
+
+class LoginUserView(ObtainAuthToken):
+    renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
+    serializer_class = AuthTokenSerializer
 
 
 class ManageUserView(generics.RetrieveUpdateAPIView):
