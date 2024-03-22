@@ -39,9 +39,12 @@ class UserViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericViewS
 
     def get_queryset(self):
         user = self.request.user
-
         follow_exists = Follow.objects.filter(follower=user, followed=OuterRef("pk"))
-        return get_user_model().objects.annotate(is_following=Exists(follow_exists))
+        queryset = get_user_model().objects.annotate(is_following=Exists(follow_exists))
+        username = self.request.query_params.get("username")
+        if username:
+            queryset = queryset.filter(username__icontains=username)
+        return queryset
 
     @action(detail=True, methods=["post"])
     def follow(self, request, pk=None):
