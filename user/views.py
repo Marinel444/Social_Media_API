@@ -1,5 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db.models import OuterRef, Exists
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import generics, mixins, status
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action
@@ -70,3 +72,15 @@ class UserViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericViewS
                 {"status": f"You have unfollowed {user_to_follow.username}"},
                 status=status.HTTP_204_NO_CONTENT,
             )
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "username",
+                type=OpenApiTypes.STR,
+                description="Filter by username (ex. ?username=admin)",
+            ),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)

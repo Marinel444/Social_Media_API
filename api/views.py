@@ -1,4 +1,6 @@
 from django.db.models import Count
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -67,3 +69,15 @@ class PostViewSet(viewsets.ModelViewSet):
         else:
             post.likes.add(user)
             return Response({"status": "like added"}, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "author",
+                type=OpenApiTypes.STR,
+                description="Filter by author (ex. ?author=username)",
+            ),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
