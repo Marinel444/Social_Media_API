@@ -1,0 +1,86 @@
+from django.contrib.auth import get_user_model
+from django.db.models import OuterRef, Exists
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from rest_framework import generics, mixins, status
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.settings import api_settings
+from rest_framework.viewsets import GenericViewSet
+
+from user.models import Follow
+from user.serializers import (
+    UserManagerSerializer,
+    UserListSerializer,
+    AuthTokenSerializer,
+)
+
+
+class CreateUserView(generics.CreateAPIView):
+    serializer_class = UserManagerSerializer
+
+
+class LoginUserView(ObtainAuthToken):
+    renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
+    serializer_class = AuthTokenSerializer
+
+
+class ManageUserView(generics.RetrieveUpdateAPIView):
+    serializer_class = UserManagerSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get_object(self):
+        return self.request.user
+
+
+class UserViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericViewSet):
+    serializer_class = UserListSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        user = self.request.user
+        follow_exists = Follow.objects.filter(follower=user, followed=OuterRef("pk"))
+        queryset = get_user_model().objects.annotate(is_following=Exists(follow_exists))
+        username = self.request.query_params.get("username")
+        if username:
+            queryset = queryset.filter(username__icontains=username)
+        return queryset
+
+    @action(detail=True, methods=["post"])
+    def follow(self, request, pk=None):
+        user_to_follow = self.get_object()
+        current_user = request.user
+        if current_user == user_to_follow:
+            return Response(
+                {"error": "You cannot follow yourself."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        follow_instance, created = Follow.objects.get_or_create(
+            follower=current_user, followed=user_to_follow
+        )
+        if created:
+            return Response(
+                {"status": f"You are now following {user_to_follow.username}"},
+                status=status.HTTP_201_CREATED,
+            )
+        else:
+            follow_instance.delete()
+            return Response(
+                {"status": f"You have unfollowed {user_to_follow.username}"},
+                status=status.HTTP_204_NO_CONTENT,
+            )
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "username",
+                type=OpenApiTypes.STR,
+                description="Filter by username (ex. ?username=admin)",
+            ),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
